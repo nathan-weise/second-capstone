@@ -1,10 +1,19 @@
 package com.techelevator.tenmo;
 
+import com.techelevator.tenmo.models.Account;
 import com.techelevator.tenmo.models.AuthenticatedUser;
+import com.techelevator.tenmo.models.User;
 import com.techelevator.tenmo.models.UserCredentials;
+import com.techelevator.tenmo.services.AccountService;
 import com.techelevator.tenmo.services.AuthenticationService;
 import com.techelevator.tenmo.services.AuthenticationServiceException;
+import com.techelevator.tenmo.services.UserService;
 import com.techelevator.view.ConsoleService;
+import io.cucumber.java.bs.A;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.web.client.RestTemplate;
 
 public class App {
 
@@ -21,10 +30,13 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 	private static final String MAIN_MENU_OPTION_VIEW_PENDING_REQUESTS = "View your pending requests";
 	private static final String MAIN_MENU_OPTION_LOGIN = "Login as different user";
 	private static final String[] MAIN_MENU_OPTIONS = { MAIN_MENU_OPTION_VIEW_BALANCE, MAIN_MENU_OPTION_SEND_BUCKS, MAIN_MENU_OPTION_VIEW_PAST_TRANSFERS, MAIN_MENU_OPTION_REQUEST_BUCKS, MAIN_MENU_OPTION_VIEW_PENDING_REQUESTS, MAIN_MENU_OPTION_LOGIN, MENU_OPTION_EXIT };
-	
+
+	private RestTemplate restTemplate = new RestTemplate();
     private AuthenticatedUser currentUser;
     private ConsoleService console;
     private AuthenticationService authenticationService;
+    private AccountService accountService;
+    private UserService userService;
 
     public static void main(String[] args) {
     	App app = new App(new ConsoleService(System.in, System.out), new AuthenticationService(API_BASE_URL));
@@ -34,6 +46,8 @@ private static final String API_BASE_URL = "http://localhost:8080/";
     public App(ConsoleService console, AuthenticationService authenticationService) {
 		this.console = console;
 		this.authenticationService = authenticationService;
+		accountService = new AccountService(API_BASE_URL);
+		userService = new UserService(API_BASE_URL);
 	}
 
 	public void run() {
@@ -70,8 +84,8 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 	}
 
 	private void viewCurrentBalance() {
-		// TODO Auto-generated method stub
-		
+		Account account = accountService.fetchAccount();
+		System.out.println("Your current account balance is: $" + account.getBalance());
 	}
 
 	private void viewTransferHistory() {
@@ -86,7 +100,19 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 
 	private void sendBucks() {
 		// TODO Auto-generated method stub
-		
+		System.out.println("-------------------------------------------\n" +
+				"Users\n" +
+				"ID          Name\n" +
+				"-------------------------------------------");
+		User[] users = userService.listAllUsers();
+		for(User user : users) {
+			System.out.println(user.getId() + "          " + user.getUsername());
+		}
+		System.out.println("---------\n\n");
+		int userSendingTo = console.getUserInputInteger("Enter ID of user you are sending to (0 to cancel)");
+		int amountToSend = console.getUserInputInteger("Enter amount");
+
+		<THIS IS WHERE WE LEFT OFF>
 	}
 
 	private void requestBucks() {
@@ -137,6 +163,8 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 			UserCredentials credentials = collectUserCredentials();
 		    try {
 				currentUser = authenticationService.login(credentials);
+				accountService.setToken(currentUser.getToken());
+				userService.setToken(currentUser.getToken());
 			} catch (AuthenticationServiceException e) {
 				System.out.println("LOGIN ERROR: "+e.getMessage());
 				System.out.println("Please attempt to login again.");
@@ -149,4 +177,5 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		String password = console.getUserInput("Password");
 		return new UserCredentials(username, password);
 	}
+
 }
