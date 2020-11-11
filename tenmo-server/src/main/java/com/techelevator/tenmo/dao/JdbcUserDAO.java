@@ -5,9 +5,11 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
@@ -19,6 +21,7 @@ public class JdbcUserDAO implements UserDAO {
 
     private static final BigDecimal STARTING_BALANCE = new BigDecimal("1000.00");
     private JdbcTemplate jdbcTemplate;
+
 
     public JdbcUserDAO(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -36,11 +39,30 @@ public class JdbcUserDAO implements UserDAO {
     }
 
     @Override
+    public List<User> listAllUsers() {
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT user_id, username FROM users;";
+        SqlRowSet rowSet = jdbcTemplate.queryForRowSet(sql);
+        while (rowSet.next()) {
+            User user = mapRowToUser2(rowSet);
+            users.add(user);
+        }
+        return users;
+    }
+    -
+    //userDTO
+    //appropriate exception handling
+    //DB queries should be in try catch blocks
+    //wrap transfer stuff in one transaction
+    //transferDTO isn't checking to make sure it is the logged in user
+
+
+    @Override
     public List<User> findAll() {
         List<User> users = new ArrayList<>();
         String sql = "SELECT user_id, username, password_hash, role FROM users;";
         SqlRowSet results = jdbcTemplate.queryForRowSet(sql);
-        while(results.next()) {
+        while (results.next()) {
             User user = mapRowToUser(results);
             users.add(user);
         }
@@ -51,12 +73,13 @@ public class JdbcUserDAO implements UserDAO {
     public User findByUsername(String username) throws UsernameNotFoundException {
         String sql = "SELECT user_id, username, password_hash, role FROM users WHERE username ILIKE ?;";
         SqlRowSet rowSet = jdbcTemplate.queryForRowSet(sql, username);
-        if (rowSet.next()){
+        if (rowSet.next()) {
             return mapRowToUser(rowSet);
         }
         throw new UsernameNotFoundException("User " + username + " was not found.");
     }
 
+    @PreAuthorize("permitAll")
     @Override
     public boolean create(String username, String password, String role) {
         if (role == null || role.isEmpty()) {
@@ -93,6 +116,13 @@ public class JdbcUserDAO implements UserDAO {
         user.setPassword(rowSet.getString("password_hash"));
         user.setAuthorities(rowSet.getString("role"));
         user.setActivated(true);
+        return user;
+    }
+
+    private User mapRowToUser2(SqlRowSet rowSet) {
+        User user = new User();
+        user.setId(rowSet.getLong("user_id"));
+        user.setUsername(rowSet.getString("username"));
         return user;
     }
 }

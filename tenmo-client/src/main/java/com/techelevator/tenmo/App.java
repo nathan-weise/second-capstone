@@ -112,7 +112,8 @@ private static final String API_BASE_URL = "http://localhost:8080/";
 		int userSendingTo = console.getUserInputInteger("Enter ID of user you are sending to (0 to cancel)");
 		int amountToSend = console.getUserInputInteger("Enter amount");
 
-		<THIS IS WHERE WE LEFT OFF>
+
+//		<THIS IS WHERE WE LEFT OFF>
 	}
 
 	private void requestBucks() {
